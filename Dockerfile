@@ -11,7 +11,7 @@ WORKDIR /app
 
 COPY --from=build /workspace/target/*.jar /app/app.jar
 
-EXPOSE 8081
+EXPOSE 8082
 
 ENV JAVA_OPTS=""
 
