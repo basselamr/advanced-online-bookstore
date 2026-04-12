@@ -4,15 +4,18 @@ pipeline {
     environment {
         IMAGE_NAME = 'basamr/bookstore'
         IMAGE_TAG  = "${env.BUILD_NUMBER}"
+        KUBECONFIG = 'C:\\Users\\b.kamel\\.kube\\config'
+        PATH = "C:\Program Files\Git\cmd\git.exe;C:\\Program Files\\Rancher Desktop\\resources\\resources\\win32\\bin"
     }
+
     tools {
-        maven 'maven3.9' // This must match the Name you gave in Global Tool Configuration
-        jdk 'JDK21'
+        maven 'maven3.9'
     }
 
     stages {
-        stage('Checkout App Code') {
+        stage('Checkout App Repo') {
             steps {
+                deleteDir()
                 checkout scm
             }
         }
@@ -44,16 +47,28 @@ pipeline {
             }
         }
 
-      stage('Clone K8s Repo') {
+        stage('Checkout K8s Repo') {
             steps {
-                bat 'git clone https://github.com/basselamr/k8s.git'
+                dir('k8s-manifests') {
+                    deleteDir()
+                    git branch: 'main', url: 'https://github.com/basselamr/k8s.git'
+                }
             }
         }
 
-        stage('Deploy to Kubernetes') {
+        stage('Kube Debug') {
+    steps {
+        bat 'echo %KUBECONFIG%'
+        bat 'kubectl config current-context'
+        bat 'kubectl config get-contexts'
+        bat 'kubectl cluster-info'
+    }
+}
+
+       stage('Deploy to Kubernetes') {
             steps {
                 bat '''
-                kubectl apply -f k8s .
+                kubectl apply -f k8s-manifests
                 kubectl set image deployment/bookstore-app bookstore-app=%IMAGE_NAME%:%IMAGE_TAG%
                 kubectl rollout status deployment/bookstore-app
                 '''
